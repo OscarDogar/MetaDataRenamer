@@ -1,4 +1,4 @@
-import subprocess, multiprocessing
+import subprocess
 import os, re
 from decouple import config
 
@@ -103,20 +103,45 @@ def process_directory(directory, keywords, new_name):
     Returns:
         None
     """
+    flag = True
     for filename in os.listdir(directory):
         if filename.endswith(".mkv"):
+            flag = False
             input_file = os.path.join(directory, filename)
             output_file = os.path.join(directory, f"modified_{filename}")
             replace_track_names(input_file, output_file, keywords, new_name)
             print(f"--------------- Processed {input_file} ---------------")
+    if flag:
+        print("No MKV files found in the specified directory.")
 
 
 def checkFileExists(file_path):
+    """
+    Check if a file exists at the given file path.
+
+    Args:
+        file_path (str): The path of the file to check.
+
+    Returns:
+        bool: True if the file exists, False otherwise.
+    """
     fullPath = os.getcwd() + file_path
     return os.path.isfile(fullPath) or os.path.exists(file_path)
 
 
 def create_env_file():
+    """
+    Creates a new .env file if it doesn't already exist and writes the environment variables to it.
+
+    The function checks if the .env file exists. If it doesn't, it creates a new .env file and writes
+    the environment variables to it. The environment variables are defined in the `env_variables` dictionary.
+
+    Args:
+        None
+
+    Returns:
+        None
+    """
     file_path = ".env"
     if not checkFileExists(file_path):
         env_variables = {
@@ -127,13 +152,44 @@ def create_env_file():
                 env_file.write(f"{key} = {value}\n")
 
 
+def createFolder(path):
+    """
+    Create a folder at the specified path if it doesn't already exist.
+
+    Args:
+        path (str): The path of the folder to be created.
+
+    Returns:
+        None
+    """
+    if not checkFolderExists(path):
+        subprocess.run('mkdir "{}"'.format(path[1:]), shell=True)
+
+
+def checkFolderExists(folder_path):
+    """
+    Check if a folder exists at the specified path.
+
+    Args:
+        folder_path (str): The path of the folder to check.
+
+    Returns:
+        bool: True if the folder exists and is a directory, False otherwise.
+    """
+    fullPath = os.getcwd() + folder_path
+    return os.path.exists(fullPath) and os.path.isdir(fullPath)
+
+
 if __name__ == "__main__":
     try:
-        multiprocessing.freeze_support()
         directory_path = "videos"
+        createFolder(f"\\{directory_path}")
         create_env_file()
         words_to_remove = config("KEYWORDS")
         words_to_remove = words_to_remove.split(",")
+        # check if the user has entered the keywords
+        if " Word1" in words_to_remove:
+            raise Exception("Please enter the keywords in the .env file")
         new_name = ""
         process_directory(directory_path, words_to_remove, new_name)
     except Exception as e:

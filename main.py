@@ -1,5 +1,6 @@
-import subprocess
+import subprocess, multiprocessing
 import os, re
+from decouple import config
 
 
 def replace_track_names(input_file, output_file, keywords, new_name):
@@ -42,8 +43,11 @@ def replace_track_names(input_file, output_file, keywords, new_name):
     # Replace track names if any of the specified keywords are present
     for track_id, track_name in tracks:
         for keyword in keywords:
-            if keyword in track_name:
+            a = keyword.strip()
+            if keyword in track_name or keyword.strip() in track_name:
                 new_track_name = track_name.replace(keyword, new_name)
+                if new_track_name == track_name:
+                    new_track_name = track_name.replace(keyword.strip(), new_name)
                 mkvpropedit_command = [
                     "mkvpropedit",
                     input_file,
@@ -71,17 +75,20 @@ def changeTitle(input_file, new_name, keywords, original_title):
         None
     """
     for keyword in keywords:
-        if keyword in original_title:
+        if keyword in original_title or keyword.strip() in original_title:
             original_title = original_title.replace(keyword, new_name)
-    mkvpropedit_command = [
-        "mkvpropedit",
-        input_file,
-        "--edit",
-        "info",
-        "--set",
-        f"title={original_title}",
-    ]
-    subprocess.run(mkvpropedit_command)
+            if original_title == original_title:
+                original_title = original_title.replace(keyword.strip(), new_name)
+            mkvpropedit_command = [
+                "mkvpropedit",
+                input_file,
+                "--edit",
+                "info",
+                "--set",
+                f"title={original_title}",
+            ]
+            subprocess.run(mkvpropedit_command)
+            break
 
 
 def process_directory(directory, keywords, new_name):
@@ -121,9 +128,19 @@ def create_env_file():
 
 
 if __name__ == "__main__":
-    directory_path = "videos"
-    create_env_file()
-    words_to_remove = os.environ.get("KEYWORDS")
-    words_to_remove = words_to_remove.split(",")
-    new_name = ""
-    process_directory(directory_path, words_to_remove, new_name)
+    try:
+        multiprocessing.freeze_support()
+        directory_path = "videos"
+        create_env_file()
+        words_to_remove = config("KEYWORDS")
+        words_to_remove = words_to_remove.split(",")
+        new_name = ""
+        process_directory(directory_path, words_to_remove, new_name)
+    except Exception as e:
+        if "'NoneType' object has no attribute 'split'" in str(e):
+            print("Please change the .env configuration file")
+        else:
+            print(e)
+    finally:
+        input("Press Enter to exit...")
+        exit(0)

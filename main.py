@@ -3,6 +3,23 @@ import os, re
 from decouple import config
 
 
+def checkName(name, keywords):
+    """
+    Check if the name contains any of the specified keywords.
+
+    Args:
+        name (str): The name of the video file.
+        keywords (list): A list of keywords to search for in the name.
+
+    Returns:
+        bool: True if the name contains any of the specified keywords, False otherwise.
+    """
+    for keyword in keywords:
+        if keyword in name or keyword.strip() in name:
+            return True
+    return False
+
+
 def replace_track_names(input_file, output_file, keywords, new_name):
     """
     Replaces track names in an MKV file based on specified keywords.
@@ -29,17 +46,25 @@ def replace_track_names(input_file, output_file, keywords, new_name):
     tracks = []
     lines = result.stdout.splitlines()
     track_id = None
+    original_title = None
     for line in lines:
         if ("track number:") in line or ("Número de pista:") in line:
             # get the first number on the left in string using regex
             track_id = int(re.search(r"\d+", line).group())
         elif ("Name:") in line or ("Nombre:") in line:
             track_name = line.split(":")[1].strip()
-            tracks.append((track_id, track_name))
+            if checkName(track_name, keywords):
+                tracks.append((track_id, track_name))
         elif ("Title:") in line or ("Título:") in line:
-            original_title = line.split(":")[1].strip()
-    if original_title:
+            if checkName(line.split(":")[1].strip(), keywords):
+                original_title = line.split(":")[1].strip()
+    if not tracks and not original_title:
+        print("No changes needed.")
+        return
+    elif original_title:
+        print(f"Changing title...")
         changeTitle(input_file, new_name, keywords, original_title)
+
     # Replace track names if any of the specified keywords are present
     for track_id, track_name in tracks:
         for keyword in keywords:
@@ -57,7 +82,7 @@ def replace_track_names(input_file, output_file, keywords, new_name):
                     f"name={new_track_name}",
                 ]
                 subprocess.run(mkvpropedit_command)
-                print(f"Track {track_id} renamed to {new_track_name}")
+                # print(f"Track {track_id} renamed to {new_track_name}")
                 break
 
 
@@ -110,7 +135,7 @@ def process_directory(directory, keywords, new_name):
             input_file = os.path.join(directory, filename)
             output_file = os.path.join(directory, f"modified_{filename}")
             replace_track_names(input_file, output_file, keywords, new_name)
-            print(f"--------------- Processed {input_file} ---------------")
+            print(f"--------------- Processed {filename} ---------------")
     if flag:
         print("No MKV files found in the specified directory.")
 
@@ -152,46 +177,25 @@ def create_env_file():
                 env_file.write(f"{key} = {value}\n")
 
 
-def createFolder(path):
-    """
-    Create a folder at the specified path if it doesn't already exist.
-
-    Args:
-        path (str): The path of the folder to be created.
-
-    Returns:
-        None
-    """
-    if not checkFolderExists(path):
-        subprocess.run('mkdir "{}"'.format(path[1:]), shell=True)
-
-
-def checkFolderExists(folder_path):
-    """
-    Check if a folder exists at the specified path.
-
-    Args:
-        folder_path (str): The path of the folder to check.
-
-    Returns:
-        bool: True if the folder exists and is a directory, False otherwise.
-    """
-    fullPath = os.getcwd() + folder_path
-    return os.path.exists(fullPath) and os.path.isdir(fullPath)
-
-
 if __name__ == "__main__":
     try:
-        directory_path = "videos"
-        createFolder(f"\\{directory_path}")
         create_env_file()
         words_to_remove = config("KEYWORDS")
         words_to_remove = words_to_remove.split(",")
         # check if the user has entered the keywords
         if " Word1" in words_to_remove:
             raise Exception("Please enter the keywords in the .env file")
+        while True:
+            dirPath = input(
+                "Enter the full path of the folder where the episodes are located: "
+            )
+            # Check if the entered path is valid
+            if os.path.exists(dirPath) and os.path.isdir(dirPath):
+                break
+            else:
+                print("Invalid path. Please enter a valid folder path.")
         new_name = ""
-        process_directory(directory_path, words_to_remove, new_name)
+        process_directory(dirPath, words_to_remove, new_name)
     except Exception as e:
         if "'NoneType' object has no attribute 'split'" in str(e):
             print("Please change the .env configuration file")
@@ -199,4 +203,3 @@ if __name__ == "__main__":
             print(e)
     finally:
         input("Press Enter to exit...")
-        exit(0)

@@ -20,6 +20,65 @@ def checkName(name, keywords):
     return False
 
 
+import subprocess
+import re
+
+
+def remove_attachment_by_name(input_file, keywords):
+    """
+    Removes attachments from a Matroska (MKV) file based on the attachment name.
+
+    Args:
+        input_file (str): The path to the input MKV file.
+        keywords (list): A list of keywords to match against the attachment names.
+
+    Returns:
+        None
+    """
+    cmd = ["mkvmerge", "--identify", input_file]
+    try:
+        result = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8")
+        # check if the command was successful
+        if result.returncode != 0:
+            print("Error identifying tracks info")
+            return
+        # check if result.stdout includes "Attachment ID"
+        check = (
+            "Attachment ID" in result.stdout
+            or "ID del archivo adjunto" in result.stdout
+        )
+        if not check:
+            return
+        lines = result.stdout.splitlines()
+        attachment_id = None
+        for line in lines:
+            if ("Attachment ID") in line or ("ID del archivo adjunto") in line:
+                # save the attachment id
+                attachment_id = int(re.search(r"\d+", line).group())
+                pattern = r"file name '([^']+)'"
+                pattern2 = r"nombre de archivo '([^']+)'"
+                match = re.search(pattern, line)
+                match2 = re.search(pattern2, line)
+                file_name = None
+                if match:
+                    file_name = match.group(1)
+                elif match2:
+                    file_name = match2.group(1)
+                if file_name:
+                    if checkName(file_name, keywords):
+                        print(f"Removing attachment {attachment_id}...")
+                        # Remove the attachment
+                        mkvpropedit_command = [
+                            "mkvpropedit",
+                            input_file,
+                            "--delete-attachment",
+                            f"{attachment_id}",
+                        ]
+                        subprocess.run(mkvpropedit_command)
+    except subprocess.CalledProcessError as e:
+        print(f"Error: {e}")
+
+
 def replace_track_names(input_file, output_file, keywords, new_name):
     """
     Replaces track names in an MKV file based on specified keywords.
@@ -134,6 +193,7 @@ def process_directory(directory, keywords, new_name):
             flag = False
             input_file = os.path.join(directory, filename)
             output_file = os.path.join(directory, f"modified_{filename}")
+            remove_attachment_by_name(input_file, words_to_remove)
             replace_track_names(input_file, output_file, keywords, new_name)
             print(f"--------------- Processed {filename} ---------------")
     if flag:

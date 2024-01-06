@@ -20,10 +20,6 @@ def checkName(name, keywords):
     return False
 
 
-import subprocess
-import re
-
-
 def remove_attachment_by_name(input_file, keywords):
     """
     Removes attachments from a Matroska (MKV) file based on the attachment name.
@@ -111,12 +107,12 @@ def replace_track_names(input_file, output_file, keywords, new_name):
             # get the first number on the left in string using regex
             track_id = int(re.search(r"\d+", line).group())
         elif ("Name:") in line or ("Nombre:") in line:
-            track_name = line.split(":")[1].strip()
+            track_name = line.split(":", 1)[1].strip()
             if checkName(track_name, keywords):
                 tracks.append((track_id, track_name))
         elif ("Title:") in line or ("Título:") in line:
-            if checkName(line.split(":")[1].strip(), keywords):
-                original_title = line.split(":")[1].strip()
+            if checkName(line.split(":", 1)[1].strip(), keywords):
+                original_title = line.split(":", 1)[1].strip()
     if not tracks and not original_title:
         print("No changes needed.")
         return

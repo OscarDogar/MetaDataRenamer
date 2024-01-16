@@ -1,23 +1,5 @@
-import subprocess
-import os, re
-from decouple import config
-
-
-def checkName(name, keywords):
-    """
-    Check if the name contains any of the specified keywords.
-
-    Args:
-        name (str): The name of the video file.
-        keywords (list): A list of keywords to search for in the name.
-
-    Returns:
-        bool: True if the name contains any of the specified keywords, False otherwise.
-    """
-    for keyword in keywords:
-        if keyword in name or keyword.strip() in name:
-            return True
-    return False
+import subprocess, re
+from utils import checkName
 
 
 def remove_attachment_by_name(input_file, keywords):
@@ -33,6 +15,7 @@ def remove_attachment_by_name(input_file, keywords):
     """
     cmd = ["mkvmerge", "--identify", input_file]
     try:
+        #TODO check if mkvmerge is installed
         result = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8")
         # check if the command was successful
         if result.returncode != 0:
@@ -169,93 +152,3 @@ def changeTitle(input_file, new_name, keywords, original_title):
             ]
             subprocess.run(mkvpropedit_command)
             break
-
-
-def process_directory(directory, keywords, new_name):
-    """
-    Process all MKV files in the specified directory by replacing track names.
-
-    Args:
-        directory (str): The directory path where the MKV files are located.
-        keywords (list): A list of keywords to search for in the track names.
-        new_name (str): The new name to replace the matched keywords in the track names.
-
-    Returns:
-        None
-    """
-    flag = True
-    for filename in os.listdir(directory):
-        if filename.endswith(".mkv"):
-            flag = False
-            input_file = os.path.join(directory, filename)
-            output_file = os.path.join(directory, f"modified_{filename}")
-            remove_attachment_by_name(input_file, words_to_remove)
-            replace_track_names(input_file, output_file, keywords, new_name)
-            print(f"--------------- Processed {filename} ---------------")
-    if flag:
-        print("No MKV files found in the specified directory.")
-
-
-def checkFileExists(file_path):
-    """
-    Check if a file exists at the given file path.
-
-    Args:
-        file_path (str): The path of the file to check.
-
-    Returns:
-        bool: True if the file exists, False otherwise.
-    """
-    fullPath = os.getcwd() + file_path
-    return os.path.isfile(fullPath) or os.path.exists(file_path)
-
-
-def create_env_file():
-    """
-    Creates a new .env file if it doesn't already exist and writes the environment variables to it.
-
-    The function checks if the .env file exists. If it doesn't, it creates a new .env file and writes
-    the environment variables to it. The environment variables are defined in the `env_variables` dictionary.
-
-    Args:
-        None
-
-    Returns:
-        None
-    """
-    file_path = ".env"
-    if not checkFileExists(file_path):
-        env_variables = {
-            "KEYWORDS": '" Word1, Word2, Word3, Word4"',
-        }
-        with open(file_path, "w") as env_file:
-            for key, value in env_variables.items():
-                env_file.write(f"{key} = {value}\n")
-
-
-if __name__ == "__main__":
-    try:
-        create_env_file()
-        words_to_remove = config("KEYWORDS")
-        words_to_remove = words_to_remove.split(",")
-        # check if the user has entered the keywords
-        if " Word1" in words_to_remove:
-            raise Exception("Please enter the keywords in the .env file")
-        while True:
-            dirPath = input(
-                "Enter the full path of the folder where the episodes are located: "
-            )
-            # Check if the entered path is valid
-            if os.path.exists(dirPath) and os.path.isdir(dirPath):
-                break
-            else:
-                print("Invalid path. Please enter a valid folder path.")
-        new_name = ""
-        process_directory(dirPath, words_to_remove, new_name)
-    except Exception as e:
-        if "'NoneType' object has no attribute 'split'" in str(e):
-            print("Please change the .env configuration file")
-        else:
-            print(e)
-    finally:
-        input("Press Enter to exit...")

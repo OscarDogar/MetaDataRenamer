@@ -8,6 +8,9 @@ def mainMenu():
     Returns:
         tuple: A tuple containing the folder path and the new name.
     """
+    
+    #TODO: Make a menu to select if change the name of the file or add the subtitle to the .mkv file
+    
     while True:
         dirPath = input(
             "Enter the full path of the folder where the episodes are located: "

@@ -66,3 +66,13 @@ def checkValidPath(path):
         bool: True if the path exists and is a directory, False otherwise.
     """
     return os.path.exists(path) and os.path.isdir(path)
+
+
+def check_mkv_toolnix_installed():
+    """
+    Check if mkvtoolnix is installed on the system.
+
+    Returns:
+        bool: True if mkvtoolnix is installed, False otherwise.
+    """
+    return os.system("mkvmerge -V") == 0

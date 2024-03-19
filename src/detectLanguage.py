@@ -1,6 +1,7 @@
 from langdetect import detect
 import os
 import subprocess
+from utils import checkFileExists
 
 available_languages = {
     "en": "eng",
@@ -23,6 +24,7 @@ def read_srt_files(directory):
     Returns:
         list: A list of strings where each string represents the content of an SRT file.
     """
+    #TODO: check if there is multiple srt files in the directory with the same name to avoid reprocessing the same file
     srt_files = [f for f in os.listdir(directory) if f.endswith(".srt")]
     if not srt_files:
         return
@@ -34,6 +36,11 @@ def read_srt_files(directory):
             fileWithoutExtension = fileWithoutExtension[
                 : fileWithoutExtension.rfind(".")
             ]
+        if not checkFileExists(os.path.join(directory, fileWithoutExtension + ".mkv")):
+            print(
+                f"File {fileWithoutExtension}.mkv not found in the directory. Skipping {file}."
+            )
+            continue
         srtFile = os.path.join(directory, file)
         with open(srtFile, "r") as f:
             # get the first 30 lines of the file and join them into a single string

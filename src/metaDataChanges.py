@@ -15,7 +15,6 @@ def remove_attachment_by_name(input_file, keywords):
     """
     cmd = ["mkvmerge", "--identify", input_file]
     try:
-        #TODO check if mkvmerge is installed
         result = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8")
         # check if the command was successful
         if result.returncode != 0:

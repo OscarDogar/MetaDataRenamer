@@ -1,8 +1,9 @@
 import os
 from menu import mainMenu
 from decouple import config
-from utils import create_env_file
+from utils import create_env_file, check_mkv_toolnix_installed
 from metaDataChanges import remove_attachment_by_name, replace_track_names
+from detectLanguage import read_srt_files
 
 
 def process_directory(directory, keywords, new_name):
@@ -32,14 +33,19 @@ def process_directory(directory, keywords, new_name):
 
 if __name__ == "__main__":
     try:
-        create_env_file()
-        words_to_remove = config("KEYWORDS")
-        words_to_remove = words_to_remove.split(",")
-        # check if the user has entered the keywords
-        if " Word1" in words_to_remove:
-            raise Exception("Please enter the keywords in the .env file")
-        dirPath, new_name = mainMenu()
-        process_directory(dirPath, words_to_remove, new_name)
+        if not check_mkv_toolnix_installed():
+            raise Exception("MKVToolNix is not installed. Please install it and try again.")
+        dirPath, new_name, option = mainMenu()
+        if option == "1":
+            create_env_file()
+            words_to_remove = config("KEYWORDS")
+            words_to_remove = words_to_remove.split(",")
+            # check if the user has entered the keywords
+            if " Word1" in words_to_remove:
+                raise Exception("Please enter the keywords in the .env file")
+            process_directory(dirPath, words_to_remove, new_name)
+        elif option == "2":
+            read_srt_files(dirPath)
     except Exception as e:
         if "'NoneType' object has no attribute 'split'" in str(e):
             print("Please change the .env configuration file")

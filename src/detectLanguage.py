@@ -26,7 +26,7 @@ def read_srt_files(directory):
     """
     # TODO: check if there is multiple srt files in the directory with the same name to avoid reprocessing the same file
     # TODO: check if the file is already in the mkv file
-    #want to delete the file after the process
+    # want to delete the file after the process
     while True:
         deleteSubs = input(
             "Do you want to delete the subtitle files after the process? (Y/N): "
@@ -81,7 +81,7 @@ def read_srt_files(directory):
         else:
             srtFile = os.path.join(directory, file)
 
-        with open(srtFile, "r", encoding="utf-8") as f:
+        with open(srtFile, "r", encoding="utf-8", errors="ignore") as f:
             # get the first 30 lines of the file and join them into a single string
             content = "".join(f.readlines()[:30])
             language = detect_language(content)

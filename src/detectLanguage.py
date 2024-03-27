@@ -3,10 +3,10 @@ import os
 import subprocess
 from utils import checkFileExists
 
-available_languages = {
-    "en": "eng",
-    "es": "spa",
-}
+# available_languages = {
+#     "en": "eng",
+#     "es": "spa",
+# }
 
 
 def detect_language(text):
@@ -24,7 +24,6 @@ def read_srt_files(directory):
     Returns:
         list: A list of strings where each string represents the content of an SRT file.
     """
-    # TODO: check if there is multiple srt files in the directory with the same name to avoid reprocessing the same file
     # TODO: check if the file is already in the mkv file
     # want to delete the file after the process
     while True:
@@ -52,66 +51,108 @@ def read_srt_files(directory):
         ]
     if not srt_files:
         return
+    duplicate_files = []
+    index_duplicate_files = {}
     for file in srt_files:
 
         fileWithoutExtension = os.path.splitext(file)[0]
-        videoExtensions = [".mkv", ".mp4", ".avi"]
-        fileExtension = ""
         # check if have another .extension in the finals positions of the file
         if "." in fileWithoutExtension[-4:]:
             # find the last . and remove the extension
             fileWithoutExtension = fileWithoutExtension[
                 : fileWithoutExtension.rfind(".")
             ]
-        # get the video file extension
-        for extension in videoExtensions:
-            if checkFileExists(
-                os.path.join(directory, fileWithoutExtension + extension)
-            ):
-                fileExtension += extension
-                break
+        # get duplicate files index in srt_files
+        if fileWithoutExtension in duplicate_files:
+            continue
+        else:
+            duplicate_files.append(fileWithoutExtension)
+            # find the index of the duplicate files using the fileWithoutExtension
+            index_duplicate_files[fileWithoutExtension] = [
+                (i, x)
+                for i, x in enumerate(srt_files)
+                if x.startswith(fileWithoutExtension)
+            ]
+        fileExtension = get_video_extension(directory, fileWithoutExtension)
         if fileExtension == "":
             print(
                 f"Could not find a video file for the subtitle {file}. Skipping this file."
             )
             continue
-        if subsFolder:
-            file = "subs/" + file
-            srtFile = os.path.join(directory, file)
-        else:
-            srtFile = os.path.join(directory, file)
-
-        with open(srtFile, "r", encoding="utf-8", errors="ignore") as f:
-            # get the first 30 lines of the file and join them into a single string
-            content = "".join(f.readlines()[:30])
-            language = detect_language(content)
-            if language != "Unknown":
-                # check if the language is in availables
-                if language not in available_languages:
-                    print(f"Language {language} is not available for {file}.")
-                    continue
-            else:
-                print(f"Could not detect language for {file}.")
+        languages = get_languages_codes(
+            index_duplicate_files[fileWithoutExtension], directory, subsFolder
+        )
         # delete the subtitle file
         result = execute_mkvmerge(
-            fileWithoutExtension, file, directory, fileExtension, language
+            subsFolder,
+            fileWithoutExtension,
+            directory,
+            languages,
+            index_duplicate_files[fileWithoutExtension],
+            fileExtension,
         )
         if result:
             if deleteSubs.lower() == "y":
-                os.remove(os.path.join(directory, file))
+                if subsFolder:
+                    for deletedFile in index_duplicate_files[fileWithoutExtension]:
+                        os.remove(os.path.join(directory, "subs", deletedFile[1]))
+                else:
+                    for deletedFile in index_duplicate_files[fileWithoutExtension]:
+                        os.remove(os.path.join(directory, deletedFile[1]))
             print(
                 f"Subtitle {file} added to {fileWithoutExtension}{fileExtension} file."
             )
     if subsFolder and deleteSubs.lower() == "y":
-        os.rmdir(os.path.join(directory, "subs"))
+        # check if the folder is empty
+        if not os.listdir(os.path.join(directory, "subs")):
+            os.rmdir(os.path.join(directory, "subs"))
+        else:
+            print("The subs folder is not empty. Could not delete it.")
+
+
+def get_languages_codes(files, directory, subsFolder):
+    languages = []
+    if subsFolder:
+        srtFile = os.path.join(directory, "subs")
+    else:
+        srtFile = directory
+    for file in files:
+        with open(
+            os.path.join(srtFile, file[1]), "r", encoding="utf-8", errors="ignore"
+        ) as f:
+            # get the first 30 lines of the file and join them into a single string
+            content = "".join(f.readlines()[:30])
+            language = detect_language(content)
+            if language != "Unknown":
+                languages.append(language)
+                # check if the language is in availables
+                # if language not in available_languages:
+                #     print(f"Language {language} is not available for {file}.")
+                #     continue
+                # else:
+            else:
+                print(f"Could not detect language for {file}.")
+    return languages
+
+
+def get_video_extension(directory, file):
+    videoExtensions = [".mkv", ".mp4", ".avi"]
+    fileExtension = ""
+    # get the video file extension
+    for extension in videoExtensions:
+        if checkFileExists(os.path.join(directory, file + extension)):
+            fileExtension += extension
+            return fileExtension
+    return fileExtension
 
 
 def execute_mkvmerge(
+    subsFolder,
     input_file,
-    subtitle_file,
     directory,
+    languages,
+    subs,
     extension=".mkv",
-    language="es",
 ):
     """
     Execute the mkvmerge command to merge the input file with the subtitle file.
@@ -124,7 +165,21 @@ def execute_mkvmerge(
         bool: True if the command execution was successful, False otherwise.
     """
     output_file = f"temp{extension}"
-    command = f'cd {directory} && mkvmerge -o {output_file} "{input_file}{extension}" --language 0:{available_languages[language]} "{subtitle_file}" && move /Y {output_file} "{input_file}{extension}"'
+    languagesCommand = ""
+    default = ""
+    for i, language in enumerate(languages):
+        if language == "es":
+            default = f' --default-track 0:yes --track-name 0:"Español"'
+        else:
+            default = ""
+        if subsFolder:
+            languagesCommand += (
+                f' {default} --language 0:{language} subs/"{subs[i][1]}"'
+            )
+        else:
+            languagesCommand += f' {default} --language 0:{language} "{subs[i][1]}"'
+
+    command = f'cd {directory} && mkvmerge -o {output_file} "{input_file}{extension}" {languagesCommand} && move /Y {output_file} "{input_file}{extension}"'
     try:
         subprocess.run(
             command,
@@ -135,4 +190,5 @@ def execute_mkvmerge(
         )
         return True
     except subprocess.CalledProcessError:
+        print(f"Error executing the command: {command}")
         return False

@@ -10,6 +10,15 @@ from utils import checkFileExists
 
 
 def detect_language(text):
+    """
+    Detects the language of the given text using a language detection library.
+
+    Parameters:
+    text (str): The text to be analyzed for language detection.
+
+    Returns:
+    str: The detected language of the text, or "Unknown" if the language cannot be determined.
+    """
     try:
         language = detect(text)
         return language
@@ -54,7 +63,6 @@ def read_srt_files(directory):
     duplicate_files = []
     index_duplicate_files = {}
     for file in srt_files:
-
         fileWithoutExtension = os.path.splitext(file)[0]
         # check if have another .extension in the finals positions of the file
         if "." in fileWithoutExtension[-4:]:
@@ -100,8 +108,9 @@ def read_srt_files(directory):
                     for deletedFile in index_duplicate_files[fileWithoutExtension]:
                         os.remove(os.path.join(directory, deletedFile[1]))
             print(
-                f"Subtitle {file} added to {fileWithoutExtension}{fileExtension} file."
+                f"Subtitles {file} added to {fileWithoutExtension}{fileExtension} file."
             )
+        print("-" * 50)
     if subsFolder and deleteSubs.lower() == "y":
         # check if the folder is empty
         if not os.listdir(os.path.join(directory, "subs")):
@@ -111,6 +120,18 @@ def read_srt_files(directory):
 
 
 def get_languages_codes(files, directory, subsFolder):
+    """
+    Get the language codes for a list of files.
+
+    Args:
+        files (list): A list of files.
+        directory (str): The directory path.
+        subsFolder (bool): Flag indicating whether the files are in a subfolder.
+
+    Returns:
+        list: A list of language codes.
+
+    """
     languages = []
     if subsFolder:
         srtFile = os.path.join(directory, "subs")
@@ -125,17 +146,23 @@ def get_languages_codes(files, directory, subsFolder):
             language = detect_language(content)
             if language != "Unknown":
                 languages.append(language)
-                # check if the language is in availables
-                # if language not in available_languages:
-                #     print(f"Language {language} is not available for {file}.")
-                #     continue
-                # else:
             else:
                 print(f"Could not detect language for {file}.")
     return languages
 
 
 def get_video_extension(directory, file):
+    """
+    Get the video file extension for a given directory and file name.
+
+    Args:
+        directory (str): The directory where the file is located.
+        file (str): The name of the file (without extension).
+
+    Returns:
+        str: The video file extension (e.g., ".mkv", ".mp4", ".avi").
+
+    """
     videoExtensions = [".mkv", ".mp4", ".avi"]
     fileExtension = ""
     # get the video file extension
@@ -181,13 +208,26 @@ def execute_mkvmerge(
 
     command = f'cd {directory} && mkvmerge -o {output_file} "{input_file}{extension}" {languagesCommand} && move /Y {output_file} "{input_file}{extension}"'
     try:
-        subprocess.run(
+        process = subprocess.Popen(
             command,
             shell=True,
-            check=True,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            universal_newlines=True,
         )
+        # Read and process the output line by line
+        for line in process.stdout:
+            # Process the output to extract progress information
+            if "progreso" in line.lower() or "progress" in line.lower():
+                # print in the same line
+                print(f"\r{line.strip()}", end="")
+            elif (
+                "el multiplexado tard" in line.lower() or "muxing took" in line.lower()
+            ):
+                print("")
+                print(line.strip())
+        # Wait for the process to finish
+        process.wait()
         return True
     except subprocess.CalledProcessError:
         print(f"Error executing the command: {command}")

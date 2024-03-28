@@ -34,7 +34,9 @@ def process_directory(directory, keywords, new_name):
 if __name__ == "__main__":
     try:
         if not check_mkv_toolnix_installed():
-            raise Exception("MKVToolNix is not installed. Please install it and try again.")
+            raise Exception(
+                "MKVToolNix is not installed. Please install it and try again."
+            )
         dirPath, new_name, option = mainMenu()
         if option == "1":
             create_env_file()

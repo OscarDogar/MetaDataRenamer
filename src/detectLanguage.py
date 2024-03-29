@@ -60,31 +60,27 @@ def read_srt_files(directory):
         ]
     if not srt_files:
         return
-    duplicate_files = []
     index_duplicate_files = {}
-    for file in srt_files:
-        fileWithoutExtension = os.path.splitext(file)[0]
+    i = 0
+    while i < len(srt_files):
+        fileName = srt_files[i]
+        fileWithoutExtension = os.path.splitext(fileName)[0]
         # check if have another .extension in the finals positions of the file
         if "." in fileWithoutExtension[-4:]:
             # find the last . and remove the extension
             fileWithoutExtension = fileWithoutExtension[
                 : fileWithoutExtension.rfind(".")
             ]
-        # get duplicate files index in srt_files
-        if fileWithoutExtension in duplicate_files:
-            continue
-        else:
-            duplicate_files.append(fileWithoutExtension)
-            # find the index of the duplicate files using the fileWithoutExtension
-            index_duplicate_files[fileWithoutExtension] = [
-                (i, x)
-                for i, x in enumerate(srt_files)
-                if x.startswith(fileWithoutExtension)
-            ]
+        # find the index of the duplicate files using the fileWithoutExtension
+        index_duplicate_files[fileWithoutExtension] = [
+            (i, x)
+            for i, x in enumerate(srt_files)
+            if x.startswith(fileWithoutExtension)
+        ]
         fileExtension = get_video_extension(directory, fileWithoutExtension)
         if fileExtension == "":
             print(
-                f"Could not find a video file for the subtitle {file}. Skipping this file."
+                f"Could not find a video file for the subtitle {fileName}. Skipping this file."
             )
             continue
         languages = get_languages_codes(
@@ -108,9 +104,10 @@ def read_srt_files(directory):
                     for deletedFile in index_duplicate_files[fileWithoutExtension]:
                         os.remove(os.path.join(directory, deletedFile[1]))
             print(
-                f"Subtitles {file} added to {fileWithoutExtension}{fileExtension} file."
+                f"Subtitles {fileName} added to {fileWithoutExtension}{fileExtension} file."
             )
         print("-" * 50)
+        i += len(index_duplicate_files[fileWithoutExtension])
     if subsFolder and deleteSubs.lower() == "y":
         # check if the folder is empty
         if not os.listdir(os.path.join(directory, "subs")):

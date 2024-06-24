@@ -41,22 +41,26 @@ def read_srt_files(directory):
         )
         if deleteSubs.lower() == "y" or deleteSubs.lower() == "n":
             break
+        elif deleteSubs == "":
+            deleteSubs = "y"
+            break
         else:
             print("Invalid option. Please enter Y or N.")
     # check if subs folder exists
     subsFolder = os.path.exists(os.path.join(directory, "subs"))
+    available_subs_extensions = [".srt", ".vtt", ".idx"]
     if subsFolder:
         srt_files = [
             f
             for f in os.listdir(os.path.join(directory, "subs"))
-            if (f.endswith(".srt") or f.endswith(".vtt"))
+            if f.endswith(tuple(available_subs_extensions))
         ]
 
     else:
         srt_files = [
             f
             for f in os.listdir(directory)
-            if (f.endswith(".srt") or f.endswith(".vtt"))
+            if f.endswith(tuple(available_subs_extensions))
         ]
     if not srt_files:
         return

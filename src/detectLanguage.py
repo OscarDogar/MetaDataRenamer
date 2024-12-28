@@ -207,7 +207,7 @@ def execute_mkvmerge(
         else:
             languagesCommand += f' {default} --language 0:{language} "{subs[i][1]}"'
 
-    command = f'cd {directory} && mkvmerge -o {output_file} "{input_file}{extension}" {languagesCommand} && move /Y {output_file} "{input_file}{extension}"'
+    command = f'cd {directory} && mkvmerge -o {output_file} "{input_file}{extension}" {languagesCommand}'
     try:
         process = subprocess.Popen(
             command,
@@ -229,6 +229,16 @@ def execute_mkvmerge(
                 print(line.strip())
         # Wait for the process to finish
         process.wait()
+        # Check the return code
+        # if process.returncode != 0:
+        #     print(f"Error executing the command: {command}")
+        #     return False
+        changeName = (
+            f'cd {directory} && move /Y {output_file} "{input_file}{extension}"'
+        )
+        subprocess.run(
+            changeName, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+        )
         return True
     except subprocess.CalledProcessError:
         print(f"Error executing the command: {command}")

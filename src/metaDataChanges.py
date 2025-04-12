@@ -1,5 +1,5 @@
 import subprocess, re
-from utils import checkName
+from utils import checkName, remove_keyword_from_name, keyword_in_track
 
 
 def remove_attachment_by_name(input_file, keywords):
@@ -106,8 +106,8 @@ def replace_track_names(input_file, output_file, keywords, new_name):
     for track_id, track_name in tracks:
         for keyword in keywords:
             a = keyword.strip()
-            if keyword in track_name or keyword.strip() in track_name:
-                new_track_name = track_name.replace(keyword, new_name)
+            if keyword_in_track(track_name, keyword.lower()):
+                new_track_name = remove_keyword_from_name(track_name, keyword)
                 if new_track_name == track_name:
                     new_track_name = track_name.replace(keyword.strip(), new_name)
                 mkvpropedit_command = [
@@ -116,7 +116,7 @@ def replace_track_names(input_file, output_file, keywords, new_name):
                     "--edit",
                     f"track:{track_id}",
                     "--set",
-                    f"name={new_track_name}",
+                    f'name="{new_track_name}"',
                 ]
                 subprocess.run(mkvpropedit_command)
                 # print(f"Track {track_id} renamed to {new_track_name}")

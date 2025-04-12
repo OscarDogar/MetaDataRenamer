@@ -110,20 +110,11 @@ def remove_keyword_from_name(track_name, keyword):
         >>> remove_keyword_from_name("Summer Hit G D R", "GDR")
         'Summer Hit'
     """
-    # Escapamos cada carácter para evitar problemas con [.NET] y similares
     escaped_letters = [re.escape(char) for char in keyword]
-    spaced_pattern = r'\s*'.join(escaped_letters)  # ej: G\s*D\s*R\s*I...
-
-    # También escapamos el keyword entero para la versión literal
+    spaced_pattern = r'\s*'.join(escaped_letters)
     raw_keyword = re.escape(keyword)
-
-    # Unimos ambas variantes en una regex: literal o separada por espacios
     pattern = rf'({raw_keyword}|{spaced_pattern})'
-
-    # Aplicamos el regex
     cleaned = re.sub(pattern, '', track_name, flags=re.IGNORECASE).strip()
-
-    # Limpiamos espacios dobles
     return re.sub(r'\s{2,}', ' ', cleaned)
 
 

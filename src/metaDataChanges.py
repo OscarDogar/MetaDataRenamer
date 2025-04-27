@@ -1,4 +1,4 @@
-import subprocess, re
+import subprocess, re, time
 from utils import checkName, remove_keyword_from_name, keyword_in_track
 
 
@@ -105,9 +105,11 @@ def replace_track_names(input_file, output_file, keywords, new_name):
     # Replace track names if any of the specified keywords are present
     for track_id, track_name in tracks:
         for keyword in keywords:
-            a = keyword.strip()
             if keyword_in_track(track_name, keyword.lower()):
                 new_track_name = remove_keyword_from_name(track_name, keyword)
+                print(
+                    f"Changed. {track_id} {track_name} To -> {new_track_name} / Removed X {keyword}"
+                )
                 if new_track_name == track_name:
                     new_track_name = track_name.replace(keyword.strip(), new_name)
                 mkvpropedit_command = [
@@ -116,7 +118,7 @@ def replace_track_names(input_file, output_file, keywords, new_name):
                     "--edit",
                     f"track:{track_id}",
                     "--set",
-                    f'name="{new_track_name}"',
+                    f"name={new_track_name}",
                 ]
                 subprocess.run(mkvpropedit_command)
                 # print(f"Track {track_id} renamed to {new_track_name}")
@@ -137,10 +139,12 @@ def changeTitle(input_file, new_name, keywords, original_title):
         None
     """
     for keyword in keywords:
-        if keyword in original_title or keyword.strip() in original_title:
-            original_title = original_title.replace(keyword, new_name)
+        if keyword_in_track(original_title, keyword.lower()):
+            original_title = remove_keyword_from_name(new_name, keyword)
             if original_title == original_title:
-                original_title = original_title.replace(keyword.strip(), new_name)
+                original_title = original_title.replace(
+                    keyword.strip(), new_name
+                ).strip()
             mkvpropedit_command = [
                 "mkvpropedit",
                 input_file,

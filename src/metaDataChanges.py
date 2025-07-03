@@ -85,7 +85,7 @@ def replace_track_names(input_file, output_file, keywords, new_name):
     track_id = None
     original_title = None
     for line in lines:
-        if ("track number:") in line or ("Número de pista:") in line:
+        if ("Track number:") in line or ("Número de pista:") in line:
             # get the first number on the left in string using regex
             track_id = int(re.search(r"\d+", line).group())
         elif ("Name:") in line or ("Nombre:") in line:

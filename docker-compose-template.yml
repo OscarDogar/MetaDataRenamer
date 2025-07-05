@@ -1,6 +1,6 @@
 services:
   meta-data-renamer:
-    image: ghcr.io/oscardogar/meta-data-renamer:latest
+    image: ghcr.io/oscardogar/meta-data-renamer:latestd
     container_name: meta_data_renamer
     volumes:
       - "C:\\your\\videos\\path:/videos" # Change this path to your video directory

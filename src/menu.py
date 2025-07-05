@@ -1,3 +1,4 @@
+from decouple import config
 from utils import checkValidPath
 
 
@@ -11,9 +12,10 @@ def mainMenu():
 
     new_name = ""
     # ask if the user wants to change the name of the file or add the subtitle to the .mkv file
-    while True:
+    option = config("OPTION")
+    while option not in ["1", "2"]:
         option = input(
-            "What do you want to do?\n1. Change the medata info \n2. Add the subtitle to the .mkv file \n\nEnter the number of the option: "
+            "What do you want to do?\n1. Change the metadata info \n2. Add the subtitle to the .mkv file \n\nEnter the number of the option: "
         )
         if option == "1":
             new_name = input(
@@ -29,7 +31,9 @@ def mainMenu():
 
 
 def get_path():
-    while True:
+    dirPath = config("DIR_PATH")
+    print("Current directory path:", dirPath)
+    while not dirPath:
         dirPath = input(
             "Enter the full path of the folder where the episodes are located: "
         )

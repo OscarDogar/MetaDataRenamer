@@ -18,6 +18,8 @@ def create_env_file():
     if not checkFileExists(file_path):
         env_variables = {
             "KEYWORDS": '" Word1, Word2, Word3, Word4"',
+            "OPTION": "1",
+            "DIR_PATH": "",
         }
         with open(file_path, "w") as env_file:
             for key, value in env_variables.items():

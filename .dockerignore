@@ -1,0 +1,22 @@
+# Ignore Python bytecode files
+__pycache__/
+*.py[cod]
+# Ignore environment files
+#.env
+# Ignore log files
+*.log
+# Ignore virtual environment directories
+venv/
+MetaEnv/
+
+# Ignore IDE specific files
+.vscode/
+# Ignore system files
+.DS_Store
+assets/
+# Ignore requirements files
+LICENSE
+README.md
+
+# Ignore Docker files
+Dockerfile

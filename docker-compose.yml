@@ -1,0 +1,11 @@
+services:
+  meta-data-renamer:
+    image: ghcr.io/oscardogar/meta-data-renamer:latest
+    container_name: meta_data_renamer
+    volumes:
+      - "C:\\your\\videos\\path:/videos" # Change this path to your video directory
+    environment:
+      - KEYWORDS=word1,word2,word3 # Replace with your keywords
+      - OPTION=1
+      - DIR_PATH=/videos
+    command: ["python", "src/main.py"]

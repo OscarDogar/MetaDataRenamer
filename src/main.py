@@ -1,4 +1,4 @@
-import os
+import os, sys
 from menu import mainMenu
 from decouple import config
 from utils import create_env_file, check_mkv_toolnix_installed
@@ -37,9 +37,9 @@ if __name__ == "__main__":
             raise Exception(
                 "MKVToolNix is not installed. Please install it and try again."
             )
+        create_env_file()
         dirPath, new_name, option = mainMenu()
         if option == "1":
-            create_env_file()
             words_to_remove = config("KEYWORDS")
             words_to_remove = words_to_remove.split(",")
             # check if the user has entered the keywords
@@ -54,4 +54,5 @@ if __name__ == "__main__":
         else:
             print(e)
     finally:
-        input("Press Enter to exit...")
+        if sys.stdin.isatty():
+            input("Press Enter to exit...")

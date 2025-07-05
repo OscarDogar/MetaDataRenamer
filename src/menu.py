@@ -15,7 +15,7 @@ def mainMenu():
     option = config("OPTION")
     while option not in ["1", "2"]:
         option = input(
-            "What do you want to do?\n1. Change the medata info \n2. Add the subtitle to the .mkv file \n\nEnter the number of the option: "
+            "What do you want to do?\n1. Change the metadata info \n2. Add the subtitle to the .mkv file \n\nEnter the number of the option: "
         )
         if option == "1":
             new_name = input(

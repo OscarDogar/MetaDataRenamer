@@ -53,6 +53,6 @@ if __name__ == "__main__":
             print("Please change the .env configuration file")
         else:
             print(e)
-    finally:
-        if sys.stdin.isatty():
-            input("Press Enter to exit...")
+    # finally:
+    #     if sys.stdin.isatty():
+    #         input("Press Enter to exit...")

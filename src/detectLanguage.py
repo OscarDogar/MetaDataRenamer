@@ -36,8 +36,9 @@ def read_srt_files(directory):
         list: A list of strings where each string represents the content of an SRT file.
     """
     # TODO: check if the file is already in the mkv file
-    if config("DELETE_SUBS", default=None):
-        deleteSubs = config("DELETE_SUBS", default=None)
+    delete_subs_config = config("DELETE_SUBS", default=None)
+    if delete_subs_config:
+        deleteSubs = delete_subs_config
     else:
         deleteSubs = input(
             "Do you want to delete the subtitle files after the process? (Y/N): "

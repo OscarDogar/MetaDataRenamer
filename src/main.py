@@ -33,6 +33,7 @@ def process_directory(directory, keywords, new_name):
 
 if __name__ == "__main__":
     try:
+        print("--------------- MetaData Renamer ---------------")
         if not check_mkv_toolnix_installed():
             raise Exception(
                 "MKVToolNix is not installed. Please install it and try again."

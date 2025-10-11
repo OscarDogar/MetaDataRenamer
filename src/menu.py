@@ -12,7 +12,12 @@ def mainMenu():
 
     new_name = ""
     # ask if the user wants to change the name of the file or add the subtitle to the .mkv file
-    option = config("OPTION")
+    if config("OPTION", default=None):
+        option = config("OPTION")
+    else:
+        option = input(
+            "What do you want to do?\n1. Change the metadata info \n2. Add the subtitle to the .mkv file \n\nEnter the number of the option: "
+        )
     while option not in ["1", "2"]:
         option = input(
             "What do you want to do?\n1. Change the metadata info \n2. Add the subtitle to the .mkv file \n\nEnter the number of the option: "

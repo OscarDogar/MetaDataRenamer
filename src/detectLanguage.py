@@ -1,7 +1,9 @@
+from decouple import config
 from langdetect import detect
 import os
 import subprocess
 from utils import checkFileExists
+from pathlib import Path
 
 # available_languages = {
 #     "en": "eng",
@@ -34,8 +36,15 @@ def read_srt_files(directory):
         list: A list of strings where each string represents the content of an SRT file.
     """
     # TODO: check if the file is already in the mkv file
+    delete_subs_config = config("DELETE_SUBS", default=None)
+    if delete_subs_config:
+        deleteSubs = delete_subs_config
+    else:
+        deleteSubs = input(
+            "Do you want to delete the subtitle files after the process? (Y/N): "
+        )
     # want to delete the file after the process
-    while True:
+    while deleteSubs is None:
         deleteSubs = input(
             "Do you want to delete the subtitle files after the process? (Y/N): "
         )
@@ -233,11 +242,16 @@ def execute_mkvmerge(
         # if process.returncode != 0:
         #     print(f"Error executing the command: {command}")
         #     return False
-        changeName = (
-            f'cd {directory} && move /Y {output_file} "{input_file}{extension}"'
-        )
+        directory = str(Path(directory))  # normalize
+        src = f'{output_file}'
+        dst = f'{input_file}{extension}'
+        print(f'\nMoving "{src}" to "{dst}"')
+        if os.name == "nt":  # Windows
+            cmd = f'cd "{directory}" && move /Y "{src}" "{dst}"'
+        else:                # Linux/macOS
+            cmd = f'cd "{directory}" && mv -f "{src}" "{dst}"'
         subprocess.run(
-            changeName, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+            cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
         )
         return True
     except subprocess.CalledProcessError:

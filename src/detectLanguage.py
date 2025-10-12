@@ -38,7 +38,7 @@ def read_srt_files(directory):
     """
     # TODO: check if the file is already in the mkv file
     delete_subs_config = config("DELETE_SUBS", default=None)
-    print(f"--------------- Adding Subtitles to MKV files {delete_subs_config} ---------------")
+    print(f"--------------- Adding Subtitles to MKV files ---------------")
     if delete_subs_config:
         deleteSubs = delete_subs_config
     else:

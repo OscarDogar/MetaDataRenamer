@@ -1,4 +1,4 @@
-import os, sys
+import os
 from menu import mainMenu
 from decouple import config
 from utils import create_env_file, check_mkv_toolnix_installed

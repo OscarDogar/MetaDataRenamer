@@ -1,3 +1,4 @@
+import sys
 from decouple import config
 from langdetect import detect
 import os
@@ -37,18 +38,23 @@ def read_srt_files(directory):
     """
     # TODO: check if the file is already in the mkv file
     delete_subs_config = config("DELETE_SUBS", default=None)
+    print(f"--------------- Adding Subtitles to MKV files {delete_subs_config} ---------------")
     if delete_subs_config:
         deleteSubs = delete_subs_config
     else:
-        deleteSubs = input(
-            "Do you want to delete the subtitle files after the process? (Y/N): "
-        )
+        if sys.stdin.isatty():
+            deleteSubs = input(
+                "Do you want to delete the subtitle files after the process? (Y/N): "
+            )
+        else:
+            deleteSubs = "Y"
+    deleteSubs = deleteSubs.lower().strip()
     # want to delete the file after the process
-    while deleteSubs is None:
+    while deleteSubs != "y" and deleteSubs != "n":
         deleteSubs = input(
             "Do you want to delete the subtitle files after the process? (Y/N): "
         )
-        if deleteSubs.lower() == "y" or deleteSubs.lower() == "n":
+        if deleteSubs == "y" or deleteSubs == "n":
             break
         elif deleteSubs == "":
             deleteSubs = "y"
@@ -215,8 +221,10 @@ def execute_mkvmerge(
             )
         else:
             languagesCommand += f' {default} --language 0:{language} "{subs[i][1]}"'
-
-    command = f'cd {directory} && mkvmerge -o {output_file} "{input_file}{extension}" {languagesCommand}'
+    change_dir = "cd /d"
+    if os.name != "nt":
+        change_dir = "cd"
+    command = f'{change_dir} {directory} && mkvmerge -o {output_file} "{input_file}{extension}" {languagesCommand}'
     try:
         process = subprocess.Popen(
             command,
@@ -236,6 +244,10 @@ def execute_mkvmerge(
             ):
                 print("")
                 print(line.strip())
+            elif "error" in line.lower() or "fatal" in line.lower():
+                print("")
+                print(f"Error: {line.strip()}")
+                return False
         # Wait for the process to finish
         process.wait()
         # Check the return code
@@ -247,9 +259,9 @@ def execute_mkvmerge(
         dst = f'{input_file}{extension}'
         print(f'\nMoving "{src}" to "{dst}"')
         if os.name == "nt":  # Windows
-            cmd = f'cd "{directory}" && move /Y "{src}" "{dst}"'
+            cmd = f'{change_dir} "{directory}" && move /Y "{src}" "{dst}"'
         else:                # Linux/macOS
-            cmd = f'cd "{directory}" && mv -f "{src}" "{dst}"'
+            cmd = f'{change_dir} "{directory}" && mv -f "{src}" "{dst}"'
         subprocess.run(
             cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
         )

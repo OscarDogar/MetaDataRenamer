@@ -87,7 +87,7 @@ def read_srt_files(directory):
     while i < len(srt_files):
         fileName = srt_files[i]
         normalize_to_utf8_inplace(
-            directory + fileName
+            os.path.join(directory, fileName)
             if not subsFolder
             else os.path.join(directory, subsFolder, fileName)
         )

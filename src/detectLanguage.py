@@ -62,7 +62,7 @@ def read_srt_files(directory):
     allowed_subs_folder_names = ["subs", "Subs", "Subtitles", "subtitles"]
     for name in allowed_subs_folder_names:
         path = os.path.join(directory, name)
-        if os.path.exists(path):
+        if os.path.isdir(path):
             subsFolder = name
             break
 

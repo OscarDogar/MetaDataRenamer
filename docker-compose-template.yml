@@ -7,5 +7,5 @@ services:
     environment:
       - KEYWORDS=word1,word2,word3 # Replace with your keywords
       - OPTION=1
+      - DELETE_SUBS=Y
       - DIR_PATH=/videos
-    command: ["python", "src/main.py"]

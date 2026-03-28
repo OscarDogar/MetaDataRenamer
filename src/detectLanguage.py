@@ -5,11 +5,7 @@ import os
 import subprocess
 from utils import checkFileExists
 from pathlib import Path
-
-# available_languages = {
-#     "en": "eng",
-#     "es": "spa",
-# }
+import chardet
 
 
 def detect_language(text):
@@ -37,8 +33,8 @@ def read_srt_files(directory):
         list: A list of strings where each string represents the content of an SRT file.
     """
     # TODO: check if the file is already in the mkv file
+    print(f"--------------- Adding Subtitles to MKV files ---------------")
     delete_subs_config = config("DELETE_SUBS", default=None)
-    print(f"--------------- Adding Subtitles to MKV files {delete_subs_config} ---------------")
     if delete_subs_config:
         deleteSubs = delete_subs_config
     else:
@@ -62,12 +58,19 @@ def read_srt_files(directory):
         else:
             print("Invalid option. Please enter Y or N.")
     # check if subs folder exists
-    subsFolder = os.path.exists(os.path.join(directory, "subs"))
+    subsFolder = None
+    allowed_subs_folder_names = ["subs", "Subs", "Subtitles", "subtitles"]
+    for name in allowed_subs_folder_names:
+        path = os.path.join(directory, name)
+        if os.path.isdir(path):
+            subsFolder = name
+            break
+
     available_subs_extensions = [".srt", ".vtt", ".idx"]
     if subsFolder:
         srt_files = [
             f
-            for f in os.listdir(os.path.join(directory, "subs"))
+            for f in os.listdir(os.path.join(directory, subsFolder))
             if f.endswith(tuple(available_subs_extensions))
         ]
 
@@ -83,6 +86,11 @@ def read_srt_files(directory):
     i = 0
     while i < len(srt_files):
         fileName = srt_files[i]
+        normalize_to_utf8_inplace(
+            os.path.join(directory, fileName)
+            if not subsFolder
+            else os.path.join(directory, subsFolder, fileName)
+        )
         fileWithoutExtension = os.path.splitext(fileName)[0]
         # check if have another .extension in the finals positions of the file
         if "." in fileWithoutExtension[-4:]:
@@ -118,7 +126,7 @@ def read_srt_files(directory):
             if deleteSubs.lower() == "y":
                 if subsFolder:
                     for deletedFile in index_duplicate_files[fileWithoutExtension]:
-                        os.remove(os.path.join(directory, "subs", deletedFile[1]))
+                        os.remove(os.path.join(directory, subsFolder, deletedFile[1]))
                 else:
                     for deletedFile in index_duplicate_files[fileWithoutExtension]:
                         os.remove(os.path.join(directory, deletedFile[1]))
@@ -129,10 +137,52 @@ def read_srt_files(directory):
         i += len(index_duplicate_files[fileWithoutExtension])
     if subsFolder and deleteSubs.lower() == "y":
         # check if the folder is empty
-        if not os.listdir(os.path.join(directory, "subs")):
-            os.rmdir(os.path.join(directory, "subs"))
+        if not os.listdir(os.path.join(directory, subsFolder)):
+            os.rmdir(os.path.join(directory, subsFolder))
         else:
-            print("The subs folder is not empty. Could not delete it.")
+            print(f"The {subsFolder} folder is not empty. Could not delete it.")
+
+
+def normalize_to_utf8_inplace(file_path):
+    """
+    Normalize a file's encoding to UTF-8 in place.
+    
+    Detects the current encoding of the file using chardet. If the file is already
+    UTF-8 or ASCII encoded (without BOM), no conversion is performed. Otherwise,
+    the file is decoded using its detected encoding (or UTF-8/latin-1 as fallback),
+    any BOM is removed, and the file is rewritten as UTF-8.
+    
+    Args:
+        file_path (str): Path to the file to be normalized.
+    
+    Returns:
+        None
+    
+    Side Effects:
+        - Prints the file path and detected encoding to stdout.
+        - Modifies the file in place, rewriting it as UTF-8 if needed.
+        - Creates a temporary file during conversion (deleted after completion).
+    
+    Raises:
+        IOError: If the file cannot be read or written.
+    """
+    with open(file_path, "rb") as f:
+        raw = f.read()
+    detected = chardet.detect(raw)
+    encoding = (detected["encoding"] or "").lower()
+    print(f"{file_path} → {encoding}")
+    if encoding in ("utf-8", "ascii") and not raw.startswith(b"\xef\xbb\xbf"):
+        return
+    # Otherwise convert
+    try:
+        text = raw.decode(encoding or "utf-8")
+    except Exception:
+        text = raw.decode("latin-1", errors="replace")
+    text = text.lstrip("\ufeff")  # remove BOM if present
+    temp_file = file_path + ".tmp"
+    with open(temp_file, "w", encoding="utf-8", newline="\n") as f:
+        f.write(text)
+    os.replace(temp_file, file_path)
 
 
 def get_languages_codes(files, directory, subsFolder):
@@ -150,7 +200,7 @@ def get_languages_codes(files, directory, subsFolder):
     """
     languages = []
     if subsFolder:
-        srtFile = os.path.join(directory, "subs")
+        srtFile = os.path.join(directory, subsFolder)
     else:
         srtFile = directory
     for file in files:
@@ -217,14 +267,14 @@ def execute_mkvmerge(
             default = ""
         if subsFolder:
             languagesCommand += (
-                f' {default} --language 0:{language} subs/"{subs[i][1]}"'
+                f' {default} --language 0:{language} {subsFolder}/"{subs[i][1]}"'
             )
         else:
             languagesCommand += f' {default} --language 0:{language} "{subs[i][1]}"'
     change_dir = "cd /d"
     if os.name != "nt":
         change_dir = "cd"
-    command = f'{change_dir} {directory} && mkvmerge -o {output_file} "{input_file}{extension}" {languagesCommand}'
+    command = f'{change_dir} "{directory}" && mkvmerge -o {output_file} "{input_file}{extension}" {languagesCommand}'
     try:
         process = subprocess.Popen(
             command,
@@ -255,12 +305,12 @@ def execute_mkvmerge(
         #     print(f"Error executing the command: {command}")
         #     return False
         directory = str(Path(directory))  # normalize
-        src = f'{output_file}'
-        dst = f'{input_file}{extension}'
+        src = f"{output_file}"
+        dst = f"{input_file}{extension}"
         print(f'\nMoving "{src}" to "{dst}"')
         if os.name == "nt":  # Windows
             cmd = f'{change_dir} "{directory}" && move /Y "{src}" "{dst}"'
-        else:                # Linux/macOS
+        else:  # Linux/macOS
             cmd = f'{change_dir} "{directory}" && mv -f "{src}" "{dst}"'
         subprocess.run(
             cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL

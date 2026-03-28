@@ -36,6 +36,16 @@ def mainMenu():
 
 
 def get_path():
+    """
+    Retrieve and validate the directory path for episodes.
+    
+    Prompts the user for a directory path if the DIR_PATH environment variable
+    is not set. Validates the entered path and continues prompting until a valid
+    path is provided.
+    
+    Returns:
+        str: The valid directory path where episodes are located.
+    """
     dirPath = config("DIR_PATH")
     print("Current directory path:", dirPath)
     while not dirPath:
